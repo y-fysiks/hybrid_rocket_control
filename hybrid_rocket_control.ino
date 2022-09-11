@@ -97,7 +97,7 @@ void loop() {
       newdata = false;
     }
     float avgPres = pressureCumulative / (pressureCount * 1.0);
-    float pressure = (avgPres - 102.3) * 667 / (920.7-102.3);
+    float pressure = (avgPres - 102.3) * 652.5 / (920.7-102.3) + 14.5;
     Serial.print(loadcell_reading);
     Serial.print(" ");
     Serial.print(pressure);
