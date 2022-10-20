@@ -83,7 +83,7 @@ void loop() {
     prevServoMillis = millis();
     digitalWrite(LED_BUILTIN, HIGH);
   }
-  if (prevServoMillis + 200 < currentMillis && myservo.attached()) {
+  if (prevServoMillis + 400 < currentMillis && myservo.attached()) {
     myservo.detach();
     digitalWrite(LED_BUILTIN, LOW);
   }
