@@ -68,7 +68,7 @@ void loop() {
   {
     throttle += 5;
     EEPROM.write(0, throttle);
-    myservo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object
+    if (!myservo.attached()) myservo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object
     myservo.write(100 - ((int) (0.94 * throttle)));
     prevServoMillis = millis();
   }
@@ -76,11 +76,11 @@ void loop() {
   {
     throttle -= 5;
     EEPROM.write(0, throttle);
-    myservo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object
+    if (!myservo.attached()) myservo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object
     myservo.write(100 - ((int) (0.94 * throttle)));
     prevServoMillis = millis();
   }
-  if (prevServoMillis + 200 < currentMillis && myservo.attached()) {
+  if (prevServoMillis + 1000 < currentMillis && myservo.attached()) {
     myservo.detach();
   }
 
