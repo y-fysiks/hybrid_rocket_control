@@ -10,8 +10,6 @@
 #define PRESSURE_SENSOR_PIN A0 // Pressure sensor pin
 #define SERVO_PIN 9 // Servo pin
 
-pinMode(LED_BUILTIN, OUTPUT); // Set LED pin as output
-
 MD_REncoder encoder(CLKENCODER, DTENCODER);
 Servo myservo;  // create servo object to control a servo
 // twelve servo objects can be created on most boards
@@ -81,11 +79,9 @@ void loop() {
     if (!myservo.attached()) myservo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object
     myservo.write(100 - ((int) (0.94 * throttle)));
     prevServoMillis = millis();
-    digitalWrite(LED_BUILTIN, HIGH);
   }
   if (prevServoMillis + 400 < currentMillis && myservo.attached()) {
     myservo.detach();
-    digitalWrite(LED_BUILTIN, LOW);
   }
 
   int rawPres = analogRead(PRESSURE_SENSOR_PIN);
@@ -94,7 +90,7 @@ void loop() {
   
   //double pressure = 0;
 
-  if (currentMillis - prevDataMillis > 40) {
+  if (currentMillis - prevDataMillis > 100) {
     prevDataMillis = currentMillis;
     if (newdata) {
       loadcell_reading = loadcell.getData();
