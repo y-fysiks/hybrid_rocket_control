@@ -162,9 +162,9 @@ int RC_inputs = 0;                //  The number of pins in pwmPIN that are conn
 
 //SANWA  6CH 40MHz with corona RP6D1  
 //                 THR          RUD           PIT     BAL     SWITCH  SLIDER
-int RC_min[6] =  { 988,         988,          988         };
-int  RC_mid[6] = {(988+2012)/2, (988+2012)/2, (988+2012)/2};
-int RC_max[6] =  { 2012,        2012,         2012};
+int RC_min[6] =  { 1000,        1000,        1000};
+int  RC_mid[6] = { 1500,        1500,         1500};
+int RC_max[6] =  { 2000,        2000,         2000};
 
 // fail safe positions
 
@@ -326,6 +326,64 @@ ISR(PCINT2_vect){                                                 //  this funct
   }
 }
 
+
+// Basic Receiver FAIL SAFE
+// check for 500-2500us and  10-330Hz (same limits as pololu)
+
+boolean FAILSAFE(int CH){
+
+   int  i = CH-1;
+   boolean failsafe_flag = LOW;
+        
+       if(pwmFlag[i]  == 1)                             // if a new pulse has been measured.
+         {
+            pwmFlag[i] = 0;                            // set flag to zero
+      
+            if(pwmPeriod[i] > 100000)                  // if time between pulses  indicates a pulse rate of less than 10Hz   
+            {
+              failsafe_flag  = HIGH;                       
+            }
+            else if(pwmPeriod[i]  < 3000)               // or if time between pulses indicates a pulse rate greater  than 330Hz   
+            {
+              failsafe_flag = HIGH;                             
+            }
+
+            if(PW[i] < 500 || PW[i] > 2500)           // if  pulswidth is outside of the range 500-2500ms
+            {
+              failsafe_flag  = HIGH;                        
+            }   
+         }
+        else  if (micros() - pwmTimer[i] > 100000)     // if there is no new pulswidth measurement  within 100ms (10hz)
+        {
+          failsafe_flag = HIGH;                      
+        }
+
+    return failsafe_flag;   
+}
+
+/*
+ *  Receiver  Calibration
+ */
+
+ // NEED TO SPEED UP
+
+float calibrate(float Rx,  int Min, int Mid, int Max){
+   float calibrated;
+   if (Rx >= Mid)
+   {
+    calibrated = map(Rx, Mid, Max, 0, 1000);  // map from 0% to 100% in one direction
+   }
+   else if (Rx == 0)
+   {
+    calibrated = 0;                           //  neutral
+   }
+   else
+   {
+    calibrated = map(Rx, Min, Mid, -1000,  0); // map from 0% to -100% in the other direction
+   }
+  return calibrated  * 0.001;
+}
+
 /*
  *  RC OUTPUT FUNCTIONS
  */
@@ -369,63 +427,6 @@ float RC_decode(int CH){
   // 0 represents neutral  or center stick on the transmitter
   // 1 is full displacement of a control input  is one direction (i.e full left rudder)
   // -1 is full displacement of the control  input in the other direction (i.e. full right rudder)
-}
-
-/*
- *  Receiver  Calibration
- */
-
- // NEED TO SPEED UP
-
-float calibrate(float Rx,  int Min, int Mid, int Max){
-   float calibrated;
-   if (Rx >= Mid)
-   {
-    calibrated = map(Rx, Mid, Max, 0, 1000);  // map from 0% to 100% in one direction
-   }
-   else if (Rx == 0)
-   {
-    calibrated = 0;                           //  neutral
-   }
-   else
-   {
-    calibrated = map(Rx, Min, Mid, -1000,  0); // map from 0% to -100% in the other direction
-   }
-  return calibrated  * 0.001;
-}
-
-// Basic Receiver FAIL SAFE
-// check for 500-2500us and  10-330Hz (same limits as pololu)
-
-boolean FAILSAFE(int CH){
-
-   int  i = CH-1;
-   boolean failsafe_flag = LOW;
-        
-       if(pwmFlag[i]  == 1)                             // if a new pulse has been measured.
-         {
-            pwmFlag[i] = 0;                            // set flag to zero
-      
-            if(pwmPeriod[i] > 100000)                  // if time between pulses  indicates a pulse rate of less than 10Hz   
-            {
-              failsafe_flag  = HIGH;                       
-            }
-            else if(pwmPeriod[i]  < 3000)               // or if time between pulses indicates a pulse rate greater  than 330Hz   
-            {
-              failsafe_flag = HIGH;                             
-            }
-
-            if(PW[i] < 500 || PW[i] > 2500)           // if  pulswidth is outside of the range 500-2500ms
-            {
-              failsafe_flag  = HIGH;                        
-            }   
-         }
-        else  if (micros() - pwmTimer[i] > 100000)     // if there is no new pulswidth measurement  within 100ms (10hz)
-        {
-          failsafe_flag = HIGH;                      
-        }
-
-    return failsafe_flag;   
 }
 
 /*

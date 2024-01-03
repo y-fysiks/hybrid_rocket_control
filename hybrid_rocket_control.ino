@@ -4,7 +4,7 @@
 #include <EEPROM.h>
 #include "PWMread_RCfailsafe.hpp"
 
-#define PREFIRE_THROT 10 // Throttle value to prefire at
+#define PREFIRE_THROT 35 // Throttle value to prefire at
 
 #define DOUTLC 6 // DOUT pin for load cell
 #define CLKLC 5 // CLK pin for load cell
@@ -21,9 +21,9 @@ MD_REncoder encoder(CLKENCODER, DTENCODER);
 
 Servo myservo; // create servo object to control a servo
 // twelve servo objects can be created on most boards
-bool servoDir = -1; // 1 is normal, -1 is reversed
-float servo_rate = 0.5;
-float servo_subtrim = 1.0555;
+int servoDir = -1; // 1 is normal, -1 is reversed
+float servo_rate = 0.53;
+float servo_subtrim = -0.4;
 
 unsigned long now;
 
@@ -49,6 +49,7 @@ int calcThrottle(int throttle) { // returns PWM value for throttle value. Input 
 }
 
 int calcThrottlePWM(double RCThrot) {
+    RCThrot = constrain(RCThrot, -1.0, 1.0);
     int cmd = 1500 + (RCThrot*servo_rate * servoDir + servo_subtrim)*1000;   // apply servo rates and sub trim, then convert to a   uS value
     if(cmd > 2500) cmd = 2500;                                      //   limit pulsewidth to the range 500 to 2500us
     else if(cmd < 500) cmd = 500;
@@ -86,6 +87,10 @@ void setup() {
     else {
         loadcell.setCalFactor(LC_calibration_factor); // user set calibration value (float), initial value 1.0 may be used for this sketch
     }
+
+    // while (RC_decode(2) > 0.0) {
+    //     delay(50);
+    // }
 }
 
 bool newdata = false;
@@ -93,6 +98,7 @@ bool newdata = false;
 unsigned long pressureCumulative = 0;
 unsigned long pressureCount = 0;
 
+bool armed = false;
 bool fired = false;
 
 void loop() {
@@ -115,18 +121,27 @@ void loop() {
                 //print_decimal2percentage(RC_in[i]);    // uncomment to print calibrated receiver input (+-100%) to serial       
             }
 
-            bool armed = RC_in[1] > 0.0;
-
-            bool prefire = RC_in[2] > 0.0;
-
             double throtCMD = RC_in[0];       // variables to store the pulse widths to be sent to the servo. -1-1 range
+            throtCMD = constrain(throtCMD, -1.0, 1.0);
 
             throttle = round((throtCMD + 1.0) * 50.0);
+
+            if (!armed) {
+                armed = (RC_in[1] > 0.0 && throttle < 5.0);
+            } else {
+                armed = (RC_in[1] > 0.0);
+            }
+
+            bool prefire = RC_in[2] > 0.0;
 
             int servo1_uS = calcThrottlePWM(throtCMD);
 
             if (armed) {
-                if (prefire) {
+                Serial.print(servo1_uS);
+                Serial.print(" ");
+                Serial.print(throttle);
+                Serial.print("\n");
+                if (armed) {
                     //set pre-fire throttle to ignite engine
                     if (throttle > PREFIRE_THROT || fired) {
                         myservo.writeMicroseconds(servo1_uS); // send pulsewidth to servo
@@ -185,15 +200,15 @@ void loop() {
         }
         float avgPres = pressureCumulative / (pressureCount * 1.0);
         float pressure = (avgPres - 102.3) * 652.5 / (920.7-102.3) + 14.5;
-        Serial.print(loadcell_reading);
-        Serial.print(" ");
-        Serial.print(pressure);
-        Serial.print(" ");
-        Serial.print(throttle);
-        Serial.print(" ");
-        Serial.print(now);
-        Serial.print(" ");
-        Serial.print('\r');
+        // Serial.print(loadcell_reading);
+        // Serial.print(" ");
+        // Serial.print(pressure);
+        // Serial.print(" ");
+        // Serial.print(throttle);
+        // Serial.print(" ");
+        // Serial.print(now);
+        // Serial.print(" ");
+        // Serial.print('\r');
 
         pressureCumulative = 0;
         pressureCount = 0;
