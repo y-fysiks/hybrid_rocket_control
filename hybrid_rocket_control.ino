@@ -141,7 +141,7 @@ void loop() {
                 Serial.print(" ");
                 Serial.print(throttle);
                 Serial.print("\n");
-                if (armed) {
+                if (prefire) {
                     //set pre-fire throttle to ignite engine
                     if (throttle > PREFIRE_THROT || fired) {
                         myservo.writeMicroseconds(servo1_uS); // send pulsewidth to servo
